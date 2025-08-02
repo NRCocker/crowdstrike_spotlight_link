@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CrowdStrike CVE URL Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background-color: #f9f9f9;
+    }
+    section {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #ccc;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      max-width: 800px;
+    }
+    textarea, input[type="text"], button, a {
+      font-size: 1rem;
+      margin-top: 0.5rem;
+      display: block;
+      width: 100%;
+      max-width: 600px;
+    }
+    textarea {
+      height: 100px;
+      padding: 0.5rem;
+    }
+    button {
+      padding: 0.6rem;
+      cursor: pointer;
+    }
+    a {
+      font-weight: bold;
+      word-break: break-word;
+      margin-top: 1rem;
+    }
+    .form-group {
+      margin-top: 1rem;
+    }
+    .radio-group label {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.3rem;
+    }
+    .checkbox-group label {
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- GLOBAL HOST LAST SEEN FILTER -->
+  <section>
+    <h2>Global Filter: Host Last Seen</h2>
+    <div class="radio-group">
+      <label><input type="radio" name="globalLastSeen" value="Last 3 days"> Last 3 days</label>
+      <label><input type="radio" name="globalLastSeen" value="Last week"> Last week</label>
+      <label><input type="radio" name="globalLastSeen" value="Last 14 days"> Last 14 days</label>
+      <label><input type="radio" name="globalLastSeen" value="Last 30 days" checked> Last 30 days</label>
+    </div>
+  </section>
+
+  <!-- SECTION 1: MULTI-CVE FILTER URL -->
+  <section>
+    <h2>Generate CrowdStrike URL for Multiple CVEs</h2>
+    <label for="multiCveInput">Enter CVE IDs (comma or newline):</label>
+    <textarea id="multiCveInput" placeholder="e.g. CVE-2025-6191, CVE-2025-6192"></textarea>
+    <button onclick="generateMultiCveLink()">Generate Link</button>
+    <a id="multiCveLink" href="#" target="_blank" style="display: none;">Open CrowdStrike Link</a>
+  </section>
+
+  <!-- SECTION 2: SINGLE CVE INSTANCE VIEW -->
+  <section>
+    <h2>Generate CrowdStrike CVE URL with CVE Details</h2>
+    <label for="singleCveInput">Enter CVE ID:</label>
+    <input type="text" id="singleCveInput" placeholder="e.g. CVE-2013-3900" />
+    <button onclick="generateSingleCveLink()">Generate Link</button>
+    <a id="singleCveLink" href="#" target="_blank" style="display: none;">View Hosts for CVE</a>
+  </section>
+
+  <!-- SECTION 3: VENDOR NAME FILTER -->
+  <section>
+    <h2>Generate CrowdStrike CVE URL for a Vendor</h2>
+    <label for="vendorInput">Enter part of the vendor name (e.g. Mozilla, Google, Veeam):</label>
+    <input type="text" id="vendorInput" placeholder="e.g. Mozilla" />
+    <small>To view host details, click on the <strong>Vulnerability ID</strong> in the results page.</small>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="kevCheckboxVendor"> Filter only CISA KEV</label>
+    </div>
+    <button onclick="generateVendorLink()">Generate Link</button>
+    <a id="vendorLink" href="#" target="_blank" style="display: none;">View Vulnerabilities for Vendor</a>
+  </section>
+
+  <!-- SECTION 4: PRODUCT NAME FILTER -->
+  <section>
+    <h2>Generate CrowdStrike CVE URL for a Product</h2>
+    <label for="productInput">Enter part of the product name (e.g. Firefox, Chrome, Excel):</label>
+    <input type="text" id="productInput" placeholder="e.g. Chrome" />
+    <small>To view host details, click on the <strong>Vulnerability ID</strong> in the results page.</small>
+    <div class="checkbox-group">
+      <label><input type="checkbox" id="kevCheckboxProduct"> Filter only CISA KEV</label>
+    </div>
+    <button onclick="generateProductLink()">Generate Link</button>
+    <a id="productLink" href="#" target="_blank" style="display: none;">View Vulnerabilities for Product</a>
+  </section>
+
+  <script>
+    function getLastSeenFilter() {
+      const selected = document.querySelector('input[name="globalLastSeen"]:checked');
+      return selected ? `host_last_seen_timestamp:'${selected.value}'` : '';
+    }
+
+    function generateMultiCveLink() {
+      const input = document.getElementById("multiCveInput").value;
+      const link = document.getElementById("multiCveLink");
+      const cves = input.split(/[\n,]+/)
+        .map(cve => cve.trim())
+        .filter(cve => /^CVE-\d{4}-\d{4,}$/.test(cve));
+
+      if (cves.length === 0) {
+        alert("Enter at least one valid CVE.");
+        link.style.display = "none";
+        return;
+      }
+
+      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability";
+      const filterParts = ["status:'open'", "suppression_info.is_suppressed:'false'"];
+      cves.forEach(cve => filterParts.push(`vulnerability_id:'${cve}'`));
+      filterParts.push(getLastSeenFilter());
+
+      const encodedFilter = encodeURIComponent(filterParts.join("+"));
+      const fullUrl = `${baseUrl}?filter=${encodedFilter}`;
+      link.href = fullUrl;
+      link.textContent = "Open CrowdStrike Link";
+      link.style.display = "block";
+    }
+
+    function generateSingleCveLink() {
+      const cve = document.getElementById("singleCveInput").value.trim();
+      const link = document.getElementById("singleCveLink");
+
+      if (!/^CVE-\d{4}-\d{4,}$/.test(cve)) {
+        alert("Please enter a valid CVE (e.g., CVE-2024-1234).");
+        link.style.display = "none";
+        return;
+      }
+
+      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability-id/instances/";
+      const filterParts = [
+        "status:'!closed'",
+        "suppression_info.is_suppressed:'false'",
+        getLastSeenFilter()
+      ];
+      const encodedFilter = encodeURIComponent(filterParts.join("+"));
+      const fullUrl = `${baseUrl}${encodeURIComponent(cve)}?filter=${encodedFilter}`;
+
+      link.href = fullUrl;
+      link.textContent = `View hosts for ${cve}`;
+      link.style.display = "block";
+    }
+
+    function generateVendorLink() {
+      const vendor = document.getElementById("vendorInput").value.trim();
+      const link = document.getElementById("vendorLink");
+      const kev = document.getElementById("kevCheckboxVendor").checked;
+
+      if (!vendor) {
+        alert("Please enter a vendor name.");
+        link.style.display = "none";
+        return;
+      }
+
+      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability";
+      const filterParts = [`status:'open'`, `app.vendor_normalized:'*${vendor}*'`];
+      if (kev) filterParts.push("cve.is_cisa_kev:'true'");
+      filterParts.push(getLastSeenFilter());
+
+      const encodedFilter = encodeURIComponent(filterParts.join("+"));
+      const fullUrl = `${baseUrl}?filter=${encodedFilter}`;
+
+      link.href = fullUrl;
+      link.textContent = `View vulnerabilities for '${vendor}'`;
+      link.style.display = "block";
+    }
+
+    function generateProductLink() {
+      const product = document.getElementById("productInput").value.trim();
+      const link = document.getElementById("productLink");
+      const kev = document.getElementById("kevCheckboxProduct").checked;
+
+      if (!product) {
+        alert("Please enter a product name.");
+        link.style.display = "none";
+        return;
+      }
+
+      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability";
+      const filterParts = [`status:'open'`, `app.product_name_normalized:'*${product}*'`];
+      if (kev) filterParts.push("cve.is_cisa_kev:'true'");
+      filterParts.push(getLastSeenFilter());
+
+      const encodedFilter = encodeURIComponent(filterParts.join("+"));
+      const fullUrl = `${baseUrl}?filter=${encodedFilter}`;
+
+      link.href = fullUrl;
+      link.textContent = `View vulnerabilities for '${product}'`;
+      link.style.display = "block";
+    }
+  </script>
+</body>
+</html>
