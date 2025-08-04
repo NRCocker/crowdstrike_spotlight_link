@@ -56,6 +56,17 @@
   </style>
 </head>
 <body>
+  <!-- GLOBAL CROWDSTRIKE HOSTING FILTER -->
+  <section>
+    <h2>Global Filter: CrowdStrike Hosting/h2>
+    <div class="radio-group">
+      <label><input type="radio" name="csBase" value="US-1"> US-1</label>
+      <label><input type="radio" name="csBase" value="US-2"> US-2</label>
+      <label><input type="radio" name="csBase" value="EU-1"> EU-1</label>
+      <label><input type="radio" name="csBase" value="US-GOV-1"> US-GOV-1</label>
+      <label><input type="radio" name="csBase" value="US-GOV-2"> US-GOV-2</label>
+    </div>
+  </section>
 
   <!-- GLOBAL HOST LAST SEEN FILTER -->
   <section>
@@ -113,6 +124,11 @@
   </section>
 
   <script>
+    function getBaseUrlFilter() {
+      const selected = document.querySelector('input[name="csBase"]:checked');
+      return selected ? `https://falcon.'${selected.value}'crowdstrike.com` : 'https://falcon.eu-1.crowdstrike.com';
+    }
+    
     function getLastSeenFilter() {
       const selected = document.querySelector('input[name="globalLastSeen"]:checked');
       return selected ? `host_last_seen_timestamp:'${selected.value}'` : '';
@@ -131,7 +147,7 @@
         return;
       }
 
-      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability";
+      const baseUrl = getBaseUrlFilter() + "/spotlight/vulnerabilities/group-by/vulnerability";
       const filterParts = ["status:'open'", "suppression_info.is_suppressed:'false'"];
       cves.forEach(cve => filterParts.push(`vulnerability_id:'${cve}'`));
       filterParts.push(getLastSeenFilter());
@@ -153,7 +169,7 @@
         return;
       }
 
-      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability-id/instances/";
+      const baseUrl = getBaseUrlFilter() +"/spotlight/vulnerabilities/group-by/vulnerability-id/instances/";
       const filterParts = [
         "status:'!closed'",
         "suppression_info.is_suppressed:'false'",
@@ -178,7 +194,7 @@
         return;
       }
 
-      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability";
+      const baseUrl = getBaseUrlFilter() + "/spotlight/vulnerabilities/group-by/vulnerability";
       const filterParts = [`status:'open'`, `app.vendor_normalized:'*${vendor}*'`];
       if (kev) filterParts.push("cve.is_cisa_kev:'true'");
       filterParts.push(getLastSeenFilter());
@@ -202,7 +218,7 @@
         return;
       }
 
-      const baseUrl = "https://falcon.crowdstrike.com/spotlight/vulnerabilities/group-by/vulnerability";
+      const baseUrl = getBaseUrlFilter() + "/spotlight/vulnerabilities/group-by/vulnerability";
       const filterParts = [`status:'open'`, `app.product_name_normalized:'*${product}*'`];
       if (kev) filterParts.push("cve.is_cisa_kev:'true'");
       filterParts.push(getLastSeenFilter());
@@ -217,4 +233,5 @@
   </script>
 </body>
 </html>
+
 
