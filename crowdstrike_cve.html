@@ -126,7 +126,7 @@
   <script>
     function getBaseUrlFilter() {
       const selected = document.querySelector('input[name="csBase"]:checked');
-      return selected ? `https://falcon.'${selected.value}'crowdstrike.com` : 'https://falcon.eu-1.crowdstrike.com';
+      return selected ? `https://falcon.${selected.value}.crowdstrike.com` : 'https://falcon.eu-1.crowdstrike.com';
     }
     
     function getLastSeenFilter() {
@@ -233,6 +233,7 @@
   </script>
 </body>
 </html>
+
 
 
 
